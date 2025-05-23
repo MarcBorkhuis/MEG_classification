@@ -34,7 +34,7 @@ class CustomMEGDataset(ContinuousDataset):
     """
     def __init__(self, data_root, scenario, mode, task_to_label_map,
                  sfreq=2034, scaling="minmax", window=2, overlap=0.5, offset=0,
-                 random_state=42, target_subject_id=None, lso_for_split=False, **kwargs):
+                 random_state=42, target_subject_id=None, lso_for_split=False,  **kwargs):
         """
         Initializes the CustomMEGDataset.
 
@@ -98,6 +98,7 @@ class CustomMEGDataset(ContinuousDataset):
             offset=offset,
             random_state=random_state,
             lso=lso_for_split,
+            split_sizes= (0.9, 0.1, 0), # Test data is already provided 
             **kwargs
         )
         
