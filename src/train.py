@@ -79,7 +79,7 @@ def load_dataset(config: Config):
             mode="train",
             task_to_label_map=config.task_to_label_map,
             target_subject_id=config.target_subject_id,
-            orig_sfreq=config.target_frequency,
+            sfreq=config.target_frequency,
         )
 
         test_dataset = CustomMEGDataset(
@@ -88,7 +88,7 @@ def load_dataset(config: Config):
             mode="test",
             task_to_label_map=config.task_to_label_map,
             target_subject_id=config.target_subject_id,
-            orig_sfreq=config.target_frequency,
+            sfreq=config.target_frequency,
         )
 
     elif config.scenario == "cross":
@@ -103,7 +103,7 @@ def load_dataset(config: Config):
                 mode=mode,
                 task_to_label_map=config.task_to_label_map,
                 target_subject_id=config.target_subject_id if mode == "train" else None,
-                orig_sfreq=config.target_frequency
+                sfreq=config.target_frequency
             )
             datasets.append(dataset)
 
