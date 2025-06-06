@@ -25,14 +25,14 @@ class Config:
     data_root: str = data_path
     scenario: str = "intra"
     target_subject_id: Optional[str] = "105923"
-    target_frequency: float = 500  # Preferred frequency in Hz
+    target_frequency: float = 500  # Preferred frequency in Hz, the orignal data is sampled in 2034 Hz 
 
     # --- Model selection ---
     # Network architecture option ("MLP", "meegnet", "custom", "VGG", "EEGNet", "vanPutNet")
     net_option: str = "meegnet"
 
     # --- Hyperparameters ---
-    epochs: int = 30
+    epochs: int = 10
     batch_size: int = 1
     learning_rate: float = 0.0001
 
@@ -122,6 +122,9 @@ def load_dataset(config: Config):
 def train_pipeline(config: Config):
     # 1. Dataset and DataLoader
 
+    # Ensure output directory exists
+    os.makedirs(config.output_dir, exist_ok=True)
+    
     train_dataset, test_dataset = load_dataset(config)
     if len(train_dataset) == 0 or len(test_dataset) == 0:
         logger.fatal("One or both datasets are empty. Aborting training.")
@@ -141,8 +144,6 @@ def train_pipeline(config: Config):
         n_outputs=len(config.task_to_label_map),
         save_path=config.output_dir,
         learning_rate=config.learning_rate,
-
-
         # Optional parameters for Optuna
     )
 
