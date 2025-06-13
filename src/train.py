@@ -53,35 +53,18 @@ DATASET_CONFIG = {
 #                         Custom Dataset and Sampler                           #
 # ---------------------------------------------------------------------------- #
 
-# FIX: New wrapper class to handle ConcatDataset compatibility with DomainSampler
 class CustomConcatDataset(ConcatDataset):
-    """Wrapper for ConcatDataset that preserves group information.
-    
-    This class extends PyTorch's ConcatDataset to handle the 'groups' attribute
-    required for domain adaptation algorithms.
-    """
+    """Wrapper for ConcatDataset that preserves group information."""
     def __init__(self, datasets):
         super().__init__(datasets)
-        # Combine the 'groups' tensor from each dataset
         self.groups = torch.cat([d.groups for d in self.datasets])
 
 class DomainSampler(Sampler):
-    """Sampler for multi-domain batch construction.
-    
-    This sampler ensures that each batch contains samples from multiple domains,
-    which is required for domain adaptation algorithms.
-    
-    Args:
-        data_subset (Subset): Dataset subset to sample from
-        samples_per_domain (int): Number of samples to draw from each domain
-        n_domains_per_batch (int): Number of domains to include in each batch
-    """
+    """Sampler for multi-domain batch construction."""
     def __init__(self, data_subset: Subset, samples_per_domain: int, n_domains_per_batch: int):
         self.data_subset = data_subset
         self.samples_per_domain = samples_per_domain
         self.n_domains_per_batch = n_domains_per_batch
-
-        # Access the 'groups' attribute from the full dataset via the subset
         all_groups = self.data_subset.dataset.groups.numpy()
         subset_groups = all_groups[self.data_subset.indices]
         self.unique_groups_in_subset = np.unique(subset_groups)
@@ -114,16 +97,7 @@ class DomainSampler(Sampler):
 #                               Training Wrapper                               #
 # ---------------------------------------------------------------------------- #
 class ModelTrainer:
-    """Training and evaluation wrapper for MEG classification models.
-    
-    This class handles the training loop, evaluation, and model checkpointing.
-    It supports both hyperparameter optimization and final model training.
-    
-    Args:
-        algorithm (Algorithm): Training algorithm instance
-        trial (Optional[optuna.Trial]): Optuna trial for hyperparameter optimization
-        final_training (bool): Whether this is the final training run
-    """
+    """Training and evaluation wrapper for MEG classification models."""
     def __init__(self, algorithm: Algorithm, trial: Optional[optuna.Trial] = None, final_training=False):
         self.algorithm = algorithm
         self.device = algorithm.device
@@ -136,14 +110,7 @@ class ModelTrainer:
         self.training_log = []
 
     def evaluate(self, dataloader):
-        """Evaluate model on a dataset.
-        
-        Args:
-            dataloader (DataLoader): DataLoader for evaluation
-            
-        Returns:
-            tuple: (loss, accuracy, predictions, true labels)
-        """
+        """Evaluate model on a dataset."""
         self.algorithm.network.eval()
         correct, total, losses = 0, 0, 0.0
         if not dataloader: return 0.0, 0.0, [], []
@@ -164,18 +131,7 @@ class ModelTrainer:
         return (losses / total, correct / total, all_preds, all_labels) if total > 0 else (0.0, 0.0, [], [])
 
     def train(self, train_dataset, batch_size, max_epochs, patience, valid_dataset=None):
-        """Train the model.
-        
-        Args:
-            train_dataset (Dataset): Training dataset
-            batch_size (int): Batch size
-            max_epochs (int): Maximum number of epochs
-            patience (int): Early stopping patience
-            valid_dataset (Optional[Dataset]): Validation dataset
-            
-        Returns:
-            float: Best validation accuracy
-        """
+        """Train the model."""
         if self.final_training:
             logger.info(f"Final training mode. Using all {len(train_dataset)} samples for training.")
             train_subset = Subset(train_dataset, range(len(train_dataset)))
@@ -262,55 +218,42 @@ class ModelTrainer:
         return self.best_val_acc
 
 def objective(trial: optuna.Trial) -> float:
-    """Optuna objective function for hyperparameter optimization.
-    
-    Args:
-        trial (optuna.Trial): Current trial
-        
-    Returns:
-        float: Validation accuracy
-    """
+    """Optuna objective function for hyperparameter optimization."""
     try:
+        # FIX: Define all possible hyperparameters for all trials to ensure a static search space
         hparams = {
+            # General
             "lr": trial.suggest_float('lr', 1e-4, 1e-2, log=True),
             "weight_decay": trial.suggest_float('weight_decay', 1e-6, 1e-3, log=True),
-            "dropout": trial.suggest_float('dropout', 0.1, 0.5)
+            "dropout": trial.suggest_float('dropout', 0.1, 0.5),
+            
+            # EEGNet
+            "n_filters_1": trial.suggest_categorical('eegnet_n_filters_1', [8, 16, 32]),
+            "depth_multiplier": trial.suggest_categorical('eegnet_depth_multiplier', [2, 4]),
+            "kernel_length": trial.suggest_categorical('eegnet_kernel_length', [32, 64]),
+
+            # MEEGNet
+            "meegnet_n_filters_1": trial.suggest_categorical('meegnet_n_filters_1', [16, 32, 64]),
+            "meegnet_n_filters_2": trial.suggest_categorical('meegnet_n_filters_2', [32, 64, 128]),
+
+            # Attention
+            "n_layers": trial.suggest_int('attn_n_layers', 1, 3),
+            "n_head": trial.suggest_categorical('attn_n_head', [2, 4]),
+            "d_model": trial.suggest_categorical('attn_d_model', [64, 128]),
+            
+            # Algorithms
+            'irm_lambda': trial.suggest_float('irm_lambda', 0.1, 10.0, log=True),
+            'irm_penalty_anneal_iters': 50,
+            'mixup_alpha': trial.suggest_float('mixup_alpha', 0.1, 0.5),
+            'dro_eta': trial.suggest_float('dro_eta', 1e-2, 1e-1, log=True),
+            'coral_lambda': trial.suggest_float('coral_lambda', 0.1, 10.0, log=True),
+            'mmd_lambda': trial.suggest_float('mmd_lambda', 0.1, 10.0, log=True)
         }
+        
         net_option = trial.suggest_categorical('net_architecture', ['meegnet', 'eegnet', 'attention'])
         algorithm_name = trial.suggest_categorical('algorithm', ALGORITHMS)
         batch_size = trial.suggest_categorical('batch_size', [32, 64, 128])
         
-        if net_option == 'eegnet':
-            hparams.update({
-                "n_filters_1": trial.suggest_categorical('n_filters_1', [8, 16, 32]),
-                "depth_multiplier": trial.suggest_categorical('depth_multiplier', [2, 4]),
-                "kernel_length": trial.suggest_categorical('kernel_length', [32, 64])
-            })
-        elif net_option == 'meegnet':
-            hparams.update({
-                "n_filters_1": trial.suggest_categorical('n_filters_1', [16, 32, 64]),
-                "n_filters_2": trial.suggest_categorical('n_filters_2', [32, 64, 128])
-            })
-        if net_option == 'attention':
-            hparams.update({
-                "n_layers": trial.suggest_int('n_layers', 1, 3),
-                "n_head": trial.suggest_categorical('n_head', [2, 4]),
-                "d_model": trial.suggest_categorical('d_model', [64, 128])
-            })
-        if algorithm_name == 'IRM':
-            hparams.update({
-                'irm_lambda': trial.suggest_float('irm_lambda', 0.1, 10.0, log=True),
-                'irm_penalty_anneal_iters': 50
-            })
-        if algorithm_name == 'Mixup':
-            hparams['mixup_alpha'] = trial.suggest_float('mixup_alpha', 0.1, 0.5)
-        if algorithm_name == 'GroupDRO':
-            hparams['dro_eta'] = trial.suggest_float('dro_eta', 1e-2, 1e-1, log=True)
-        if algorithm_name == 'CORAL':
-            hparams['coral_lambda'] = trial.suggest_float('coral_lambda', 0.1, 10.0, log=True)
-        if algorithm_name == 'MMD':
-            hparams['mmd_lambda'] = trial.suggest_float('mmd_lambda', 0.1, 10.0, log=True)
-
         if SCENARIO == 'cross':
             logger.info("Cross-scenario HPO: Training on all 'train' data, validating on 'test1'.")
             train_dataset = CustomMEGDataset(data_root=DATA_ROOT, scenario='cross', mode="train", task_to_label_map=TASK_MAP, **DATASET_CONFIG)
@@ -328,6 +271,8 @@ def objective(trial: optuna.Trial) -> float:
         sample_input_dataset = train_dataset if SCENARIO == 'cross' else train_val_dataset
         sample_input, _ = sample_input_dataset[0]
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        
+        # Pass the full hparams dict; models and algorithms will use .get() to find what they need
         network = create_net(net_option, sample_input.shape, len(TASK_MAP), hparams).to(device)
         algorithm = get_algorithm_class(algorithm_name)(network, hparams, device)
         
@@ -342,11 +287,7 @@ def objective(trial: optuna.Trial) -> float:
         return 0.0
 
 def train_final_model(best_trial: optuna.trial.FrozenTrial):
-    """Train the final model using the best hyperparameters.
-    
-    Args:
-        best_trial (optuna.trial.FrozenTrial): Best trial from hyperparameter optimization
-    """
+    """Train the final model using the best hyperparameters."""
     logger.info("\n" + "="*50 + "\n--- TRAINING FINAL MODEL WITH BEST HYPERPARAMETERS ---\n" + "="*50)
     logger.info(f"Best Trial: #{best_trial.number} with Accuracy: {best_trial.value:.4f}")
     hparams = best_trial.params.copy()
