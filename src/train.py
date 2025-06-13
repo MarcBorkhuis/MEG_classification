@@ -22,8 +22,8 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------- #
 #                                 Global Config                                #
 # ---------------------------------------------------------------------------- #
-SCENARIO = "cross" 
-DATA_ROOT = "/home/daan/DL2/data"
+SCENARIO = "intra" 
+DATA_ROOT = "data"
 TASK_MAP = {"rest": 0, "task_motor": 1, "task_story_math": 2, "task_working_memory": 3}
 DATASET_CONFIG = {
     "sfreq": 500, "orig_sfreq": 2034, "window": 2, "overlap": 0.5,
@@ -249,7 +249,7 @@ def main():
         study_name=study_name, storage=storage_name, load_if_exists=True,
         direction="maximize", pruner=optuna.pruners.MedianPruner()
     )
-    study.optimize(objective, n_trials=100)
+    study.optimize(objective, n_trials=37)
     
     logger.info(f"\n--- OPTIMIZATION FINISHED FOR '{SCENARIO}' SCENARIO ---")
     logger.info(f"Best trial: {study.best_trial.number} with value: {study.best_value:.4f}")
