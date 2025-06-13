@@ -1,3 +1,13 @@
+"""MEG Data Loading and Preprocessing Module
+
+This module provides classes for loading and preprocessing MEG data from H5 files.
+It supports both continuous and epoched data formats, with functionality for:
+- Data windowing and resampling
+- Subject-wise splitting (Leave-Subject-Out)
+- Data scaling (z-score or min-max normalization)
+- Efficient data loading with memory mapping
+"""
+
 import os
 import random
 import logging
@@ -13,9 +23,21 @@ from utils import string_to_int
 LOG = logging.getLogger(__name__)
 
 class EpochedDataset(Dataset):
-    """Base class for M/EEG data, handles non-windowed properties."""
+    """Base class for M/EEG data handling.
+    
+    This class provides core functionality for M/EEG data processing including:
+    - Data scaling (z-score or min-max normalization)
+    - Train/validation/test splitting
+    - Leave-Subject-Out (LSO) splitting for cross-subject validation
+    
+    Args:
+        sfreq (int): Sampling frequency of the data
+        scaling (str): Scaling method ('zscore' or 'minmax')
+        lso (bool): Whether to use Leave-Subject-Out splitting
+        random_state (int): Random seed for reproducibility
+        split_sizes (tuple): Ratios for train/valid/test split (must sum to 1)
+    """
     def __init__(self, **kwargs):
-        # FIX: Explicitly pop required arguments from kwargs.
         self.sfreq = kwargs.pop('sfreq')
         self.scaling = kwargs.pop('scaling')
         self.lso = kwargs.pop('lso')
@@ -33,11 +55,17 @@ class EpochedDataset(Dataset):
         self._reset_seed()
 
     def _reset_seed(self):
+        """Reset random seeds for reproducibility."""
         np.random.seed(self.random_state)
         random.seed(self.random_state)
         torch.manual_seed(self.random_state)
 
     def split_data(self):
+        """Split data into train/validation/test sets.
+        
+        Returns:
+            tuple: Indices for train, validation, and test sets
+        """
         train_size, valid_size, test_size = self.split_sizes
         assert np.isclose(sum((train_size, valid_size, test_size)), 1.0), "Sum of data ratios must be equal to 1"
         
@@ -62,6 +90,15 @@ class EpochedDataset(Dataset):
             return random_split(range(n_total), [n_train, n_valid, n_test], generator)
 
     def _leave_subjects_out_split(self, sizes, generator):
+        """Perform Leave-Subject-Out splitting.
+        
+        Args:
+            sizes (tuple): Ratios for train/valid/test split
+            generator (torch.Generator): Random number generator
+            
+        Returns:
+            tuple: Indices for train, validation, and test sets
+        """
         unique_subjects = torch.unique(self.groups).tolist()
         n_subjects = len(unique_subjects)
         
@@ -84,18 +121,32 @@ class EpochedDataset(Dataset):
     def __getitem__(self, idx): raise NotImplementedError
 
 class ContinuousDataset(EpochedDataset):
-    """Handles continuous data by adding windowing properties."""
+    """Extension of EpochedDataset for continuous data with windowing.
+    
+    Args:
+        window (float): Window size in seconds
+        overlap (float): Overlap between windows (0 to 1)
+    """
     def __init__(self, **kwargs):
-        # FIX: Pop arguments for this class before passing kwargs to parent.
         self.window = kwargs.pop('window')
         self.overlap = kwargs.pop('overlap')
         super().__init__(**kwargs)
         assert 0 <= self.overlap < 1, "Overlap must be between 0 and 1."
 
 class CustomMEGDataset(ContinuousDataset):
-    """Custom PyTorch Dataset for loading and preprocessing MEG data from H5 files."""
+    """Custom PyTorch Dataset for MEG data from H5 files.
+    
+    This class handles loading and preprocessing of MEG data from H5 files,
+    including windowing, resampling, and subject-wise organization.
+    
+    Args:
+        data_root (str): Root directory containing the data
+        scenario (str): 'intra' or 'cross' scenario
+        mode (str): 'train', 'test1', 'test2', or 'test3'
+        task_to_label_map (dict): Mapping from task names to label indices
+        orig_sfreq (int): Original sampling frequency
+    """
     def __init__(self, **kwargs):
-        # FIX: Pop arguments for this class before passing kwargs to parent.
         self.data_root = kwargs.pop('data_root')
         self.scenario = kwargs.pop('scenario')
         self.mode = kwargs.pop('mode')
@@ -182,6 +233,7 @@ class CustomMEGDataset(ContinuousDataset):
         raise RuntimeError(f"Metadata not found for index {idx}.")
     
     def _get_data_paths(self):
+        """Get paths to data directories based on scenario and mode."""
         paths = []
         base_path = os.path.join(self.data_root, self.scenario.capitalize())
         if self.scenario == "intra":
@@ -194,6 +246,7 @@ class CustomMEGDataset(ContinuousDataset):
         return valid_paths
     
     def _extract_info_from_filename(self, filename):
+        """Extract subject and task information from filename."""
         base = os.path.splitext(filename)[0]
         parts = base.split('_')
         if len(parts) >= 3 and parts[-2].isdigit():
@@ -201,15 +254,18 @@ class CustomMEGDataset(ContinuousDataset):
         return None, None
     
     def _load_h5_file_data(self, filepath):
+        """Load data from H5 file."""
         with h5py.File(filepath, 'r') as f:
             return f[list(f.keys())[0]][()].astype(np.float32)
     
     def _downsample(self, data):
+        """Downsample data to target sampling frequency."""
         if self.sfreq >= self.original_sfreq: return data
         n_samples = int(data.shape[-1] * self.sfreq / self.original_sfreq)
         return resample(data, n_samples, axis=-1)
     
     def _get_or_create_subject_int_id(self, subject_str_id):
+        """Map string subject IDs to integer IDs."""
         if subject_str_id not in self._subject_str_to_int_map:
             new_id = self._next_subject_int_id
             self._subject_str_to_int_map[subject_str_id] = new_id
@@ -218,4 +274,5 @@ class CustomMEGDataset(ContinuousDataset):
     
     @property
     def n_subjects(self):
+        """Number of unique subjects in the dataset."""
         return self._next_subject_int_id

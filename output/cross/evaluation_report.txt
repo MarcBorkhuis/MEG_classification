@@ -1,0 +1,45 @@
+Evaluation Report for Scenario: CROSS
+Model: eegnet, Algorithm: IRM
+
+--- Results for Cross-Test-1 ---
+Overall Accuracy: 0.4102
+                     precision    recall  f1-score   support
+
+               rest       0.45      0.67      0.54        64
+         task_motor       0.00      0.00      0.00        64
+    task_story_math       0.58      0.50      0.54        64
+task_working_memory       0.35      0.47      0.40        64
+
+           accuracy                           0.41       256
+          macro avg       0.34      0.41      0.37       256
+       weighted avg       0.34      0.41      0.37       256
+
+==================================================
+--- Results for Cross-Test-2 ---
+Overall Accuracy: 0.3711
+                     precision    recall  f1-score   support
+
+               rest       0.89      0.61      0.72        64
+         task_motor       0.27      0.83      0.41        64
+    task_story_math       0.20      0.03      0.05        64
+task_working_memory       0.12      0.02      0.03        64
+
+           accuracy                           0.37       256
+          macro avg       0.37      0.37      0.30       256
+       weighted avg       0.37      0.37      0.30       256
+
+==================================================
+--- Results for Cross-Test-3 ---
+Overall Accuracy: 0.4648
+                     precision    recall  f1-score   support
+
+               rest       0.63      0.59      0.61        64
+         task_motor       0.65      0.50      0.57        64
+    task_story_math       0.20      0.22      0.21        64
+task_working_memory       0.45      0.55      0.49        64
+
+           accuracy                           0.46       256
+          macro avg       0.48      0.46      0.47       256
+       weighted avg       0.48      0.46      0.47       256
+
+==================================================

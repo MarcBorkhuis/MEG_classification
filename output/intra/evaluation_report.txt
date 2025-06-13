@@ -1,0 +1,17 @@
+Evaluation Report for Scenario: INTRA
+Model: eegnet, Algorithm: IRM
+
+--- Results for Intra-Test ---
+Overall Accuracy: 0.8359
+                     precision    recall  f1-score   support
+
+               rest       0.97      0.97      0.97        32
+         task_motor       0.89      0.75      0.81        32
+    task_story_math       0.72      0.72      0.72        32
+task_working_memory       0.78      0.91      0.84        32
+
+           accuracy                           0.84       128
+          macro avg       0.84      0.84      0.84       128
+       weighted avg       0.84      0.84      0.84       128
+
+==================================================
