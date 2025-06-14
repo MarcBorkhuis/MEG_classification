@@ -1,4 +1,4 @@
-# MEG Classification with Domain Adaptation
++# MEG Classification with Domain Adaptation
 
 This repository contains a PyTorch implementation of MEG (Magnetoencephalography) classification with domain adaptation techniques. The project focuses on improving cross-subject generalization in MEG classification tasks by implementing various domain adaptation and regularization algorithms.
 

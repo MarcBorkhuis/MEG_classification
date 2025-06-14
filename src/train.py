@@ -36,7 +36,7 @@ logger = logging.getLogger(__name__)
 #                                 Global Config                                #
 # ---------------------------------------------------------------------------- #
 # Set this to 'intra' or 'cross' to control the training execution
-SCENARIO = "cross" 
+SCENARIO = "intra" 
 # Make sure this path is correct for your system
 DATA_ROOT = "/home/daan/DL2/data" 
 # UPDATED: Changed output directory to v2
