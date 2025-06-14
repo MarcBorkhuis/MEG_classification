@@ -1,0 +1,45 @@
+Evaluation Report for Scenario: CROSS
+Model: eegnet, Algorithm: CORAL
+
+--- Results for Cross-Test-1 ---
+Overall Accuracy: 0.4922
+                     precision    recall  f1-score   support
+
+               rest       0.47      0.83      0.60        64
+         task_motor       0.16      0.06      0.09        64
+    task_story_math       0.58      0.81      0.68        64
+task_working_memory       0.59      0.27      0.37        64
+
+           accuracy                           0.49       256
+          macro avg       0.45      0.49      0.43       256
+       weighted avg       0.45      0.49      0.43       256
+
+==================================================
+--- Results for Cross-Test-2 ---
+Overall Accuracy: 0.3828
+                     precision    recall  f1-score   support
+
+               rest       0.97      0.53      0.69        64
+         task_motor       0.29      0.98      0.45        64
+    task_story_math       1.00      0.02      0.03        64
+task_working_memory       0.00      0.00      0.00        64
+
+           accuracy                           0.38       256
+          macro avg       0.57      0.38      0.29       256
+       weighted avg       0.57      0.38      0.29       256
+
+==================================================
+--- Results for Cross-Test-3 ---
+Overall Accuracy: 0.5859
+                     precision    recall  f1-score   support
+
+               rest       0.81      0.80      0.80        64
+         task_motor       0.51      0.52      0.51        64
+    task_story_math       0.38      0.33      0.35        64
+task_working_memory       0.62      0.70      0.66        64
+
+           accuracy                           0.59       256
+          macro avg       0.58      0.59      0.58       256
+       weighted avg       0.58      0.59      0.58       256
+
+==================================================

@@ -1,0 +1,17 @@
+Evaluation Report for Scenario: INTRA
+Model: eegnet, Algorithm: MMD
+
+--- Results for Intra-Test ---
+Overall Accuracy: 0.8047
+                     precision    recall  f1-score   support
+
+               rest       1.00      0.94      0.97        32
+         task_motor       0.82      0.88      0.85        32
+    task_story_math       0.67      0.56      0.61        32
+task_working_memory       0.73      0.84      0.78        32
+
+           accuracy                           0.80       128
+          macro avg       0.80      0.80      0.80       128
+       weighted avg       0.80      0.80      0.80       128
+
+==================================================

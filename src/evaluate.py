@@ -48,8 +48,8 @@ def load_model_for_evaluation(scenario: str, output_dir: str, data_root: str):
         tuple: (algorithm, batch_size, hparams, net_option) or (None, None, None, None) if loading fails
     """
     logger.info("--- Loading best model configuration from Optuna study ---")
-    study_name = f"meg-{scenario}-study-v1"
-    storage_name = f"sqlite:///{study_name}.db"
+    study_name = f"meg-{scenario}-study-v2"
+    storage_name = f"sqlite:///{output_dir}/{study_name}.db"
     
     try:
         study = optuna.load_study(study_name=study_name, storage=storage_name)
@@ -121,7 +121,7 @@ def main(args):
     Args:
         args (argparse.Namespace): Command line arguments
     """
-    output_dir = f"output/{args.scenario}"
+    output_dir = f"outputv2/{args.scenario}"
     os.makedirs(output_dir, exist_ok=True)
     
     algorithm, batch_size, hparams, net_option = load_model_for_evaluation(args.scenario, output_dir, args.data_root)
